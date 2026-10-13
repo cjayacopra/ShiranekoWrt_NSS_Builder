@@ -40,9 +40,9 @@ env:
   FEEDS: |
     src-git nss https://github.com/JuliusBairaktaris/nss-packages.git;edma-nss
     src-git aw1000 https://github.com/cjayacopra/aw1000-feed.git;main
-    src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git;ef68bbbb3a975a5eaa923b37a98e81a4ee005296
-    src-git footstrap_files https://github.com/VizzleTF/luci-app-footstrap-files.git;e2aa8d1ff471b30d3789793949e5d79fb915b0a4
-    src-git luci_smstool https://github.com/4IceG/luci-app-sms-tool-js.git;0bd41a0b64fa9a41272f391fcd0900fc1115af6e
+    src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git^ef68bbbb3a975a5eaa923b37a98e81a4ee005296
+    src-git footstrap_files https://github.com/VizzleTF/luci-app-footstrap-files.git^e2aa8d1ff471b30d3789793949e5d79fb915b0a4
+    src-git luci_smstool https://github.com/4IceG/luci-app-sms-tool-js.git^0bd41a0b64fa9a41272f391fcd0900fc1115af6e
 
 jobs:
   check:
