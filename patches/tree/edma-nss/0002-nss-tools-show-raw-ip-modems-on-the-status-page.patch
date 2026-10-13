@@ -8,8 +8,13 @@ report each bound modem netdev with the same offloaded / host columns as
 the ports: "modems" in the JSON, a modem table in the text report, and
 modem rows in the LuCI port table.
 ---
+ .../nss/nss-tools/files/luci-nss-status.js    | 17 ++++++-
+ package/nss/nss-tools/files/nss-status        | 49 ++++++++++++++++++-
+ .../nss/nss-tools/tests/nss-status.test.sh    | 30 ++++++++++++
+ 3 files changed, 94 insertions(+), 2 deletions(-)
+
 diff --git a/package/nss/nss-tools/files/luci-nss-status.js b/package/nss/nss-tools/files/luci-nss-status.js
-index eda8d8199b..cb2e0e2af3 100644
+index 52233fd..1609744 100644
 --- a/package/nss/nss-tools/files/luci-nss-status.js
 +++ b/package/nss/nss-tools/files/luci-nss-status.js
 @@ -80,6 +80,21 @@ function renderStatus(d) {
@@ -34,7 +39,7 @@ index eda8d8199b..cb2e0e2af3 100644
  	return E('div', {}, [
  		E('p', {}, stateBadge(d.state)),
  		E('table', { 'class': 'table' }, [
-@@ -118,7 +133,7 @@ function renderStatus(d) {
+@@ -117,7 +132,7 @@ function renderStatus(d) {
  				E('td', { 'class': 'td', 'colspan': '7' }, _('No ports attached — host stack'))
  			])
  		])),
@@ -44,7 +49,7 @@ index eda8d8199b..cb2e0e2af3 100644
  }
  
 diff --git a/package/nss/nss-tools/files/nss-status b/package/nss/nss-tools/files/nss-status
-index efa137d6de..6945e3ce36 100755
+index 24311fc..d45dd27 100755
 --- a/package/nss/nss-tools/files/nss-status
 +++ b/package/nss/nss-tools/files/nss-status
 @@ -104,6 +104,34 @@ ports=$(echo "$ports" | while read -r ifnum nd st htx frx; do
@@ -82,7 +87,7 @@ index efa137d6de..6945e3ce36 100755
  ecm_loaded=$(mod ecm)
  ecm_v4=$(cat "$ECM/ecm_nss_ipv4/accelerated_count" 2>/dev/null || echo 0)
  ecm_v6=$(cat "$ECM/ecm_nss_ipv6/accelerated_count" 2>/dev/null || echo 0)
-@@ -183,6 +211,15 @@ if [ "$JSON" = 1 ]; then
+@@ -184,6 +212,15 @@ if [ "$JSON" = 1 ]; then
  	done
  	pjson="[${pjson%,}]"
  
@@ -98,34 +103,34 @@ index efa137d6de..6945e3ce36 100755
  	cjson=""
  	for c in $core_loads; do
  		cjson="$cjson{\"core\":${c%%:*},\"avg\":${c##*:}},"
-@@ -207,7 +244,7 @@ if [ "$JSON" = 1 ]; then
+@@ -208,7 +245,7 @@ if [ "$JSON" = 1 ]; then
  
  	cat <<-EOF
  	{"state":"$state","fw_version":"$fw_version","fw_mask":"$fw_mask",
 -	"heartbeat_pps":$heartbeat,"cores":$cjson,"ports":$pjson,
 +	"heartbeat_pps":$heartbeat,"cores":$cjson,"ports":$pjson,"modems":$mjson,
- 	"ecm":{"loaded":$ecm_loaded,"ipv4_accel":$ecm_v4,"ipv6_accel":$ecm_v6},
- 	"modules":{"bridge_mgr":$bridge_mgr,"mcs":$mcs,"pppoe":$pppoe_mgr},
+ 	"ecm":{"loaded":$ecm_loaded,"ipv4_accel":$ecm_v4,"ipv6_accel":$ecm_v6,"multicast_accel":$ecm_mc},
+ 	"modules":{"bridge_mgr":$bridge_mgr,"pppoe":$pppoe_mgr},
  	"wifi_offload":$wifi_offload,
-@@ -368,6 +405,16 @@ if [ -n "$ports" ]; then
+@@ -369,6 +406,16 @@ if [ -n "$ports" ]; then
  	echo "     short-lived flows, and traffic addressed to the router itself. A quiet"
  	echo "     port carries little else, so its share reads low. Port totals: ifconfig)"
  fi
 +if [ -n "$modems" ]; then
 +	echo "  modems:      raw-IP, bound to an rmnet_rx node pair (n2h/h2n); counts since the bind"
-+	printf "    %-8s %7s  %18s %10s  %18s %10s\n" \
-+	       "netdev" "nodes" "tx offloaded" "via host" "rx offloaded" "to host"
++	printf "    %-8s %7s  %18s %10s  %18s %10s
++" 	       "netdev" "nodes" "tx offloaded" "via host" "rx offloaded" "to host"
 +	echo "$modems" | while read -r nd n2h h2n htx hrx ttx trx otx orx ptx prx; do
 +		[ -n "$nd" ] || continue
-+		printf "    %-8s %7s  %18s %10s  %18s %10s\n" \
-+		       "$nd" "$n2h/$h2n" "$otx ($ptx%)" "$htx" "$orx ($prx%)" "$hrx"
++		printf "    %-8s %7s  %18s %10s  %18s %10s
++" 		       "$nd" "$n2h/$h2n" "$otx ($ptx%)" "$htx" "$orx ($prx%)" "$hrx"
 +	done
 +fi
- echo "  ECM:         loaded=$ecm_loaded, accelerated: $ecm_v4 IPv4 / $ecm_v6 IPv6"
- echo "  modules:     bridge-mgr=$bridge_mgr qca-mcs=$mcs pppoe-mgr=$pppoe_mgr"
+ echo "  ECM:         loaded=$ecm_loaded, accelerated: $ecm_v4 IPv4 / $ecm_v6 IPv6 / $ecm_mc multicast"
+ echo "  modules:     bridge-mgr=$bridge_mgr pppoe-mgr=$pppoe_mgr"
  case "$wifi_offload" in
 diff --git a/package/nss/nss-tools/tests/nss-status.test.sh b/package/nss/nss-tools/tests/nss-status.test.sh
-index 584a94e020..4c8f78dc04 100644
+index 584a94e..4c8f78d 100644
 --- a/package/nss/nss-tools/tests/nss-status.test.sh
 +++ b/package/nss/nss-tools/tests/nss-status.test.sh
 @@ -276,4 +276,34 @@ check 'mesh: a real vdev is reported as offloaded' \
@@ -163,3 +168,6 @@ index 584a94e020..4c8f78dc04 100644
 +	1 "$(run | grep -c 'wwan0_1 *32/33')"
 +
  exit "$fail"
+-- 
+2.55.0
+
