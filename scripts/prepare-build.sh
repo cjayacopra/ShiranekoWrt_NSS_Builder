@@ -66,16 +66,16 @@ if [[ -n "$FEEDS" ]]; then
     fi
   done <<<"$FEEDS"
 
-  # Update every custom feed before installing any: a feed's LuCI packages
-  # include feeds/luci/luci.mk, which does not resolve until the luci feed
-  # is cloned, so indexing a feed before `update -a` fills feeds/ fails.
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    feed_name="$(awk '{print $2}' <<<"$line")"
-    log::info "Updating feed: $feed_name"
-    ./scripts/feeds update "$feed_name"
-  done <<<"$FEEDS"
-  # Install each custom feed individually so failures are obvious.
+  # No per-feed `update`: `feeds update` indexes the feed immediately, and a
+  # feed's LuCI packages include feeds/luci/luci.mk, which does not resolve
+  # until the luci feed is cloned. One `update -a` below clones the default
+  # feeds (luci included) before the appended custom feeds get indexed.
+fi
+
+log::info "Updating + installing all feeds"
+./scripts/feeds update -a
+# Install every custom feed as its own step so failures are attributable.
+if [[ -n "$FEEDS" ]]; then
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
     feed_name="$(awk '{print $2}' <<<"$line")"
@@ -83,9 +83,6 @@ if [[ -n "$FEEDS" ]]; then
     ./scripts/feeds install -a -p "$feed_name"
   done <<<"$FEEDS"
 fi
-
-log::info "Updating + installing all feeds"
-./scripts/feeds update -a
 ./scripts/feeds install -a
 
 # 1b. Apply local patches to feed packages
