@@ -7,7 +7,7 @@ body:
     attributes:
       label: Device id
       description: The device you built
-      placeholder: xiaomi_ax3600
+      placeholder: aw1000
     validations:
       required: true
 

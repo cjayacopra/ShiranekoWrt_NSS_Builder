@@ -12,26 +12,17 @@ flowchart LR
 | Job | File | Runtime | Purpose |
 |---|---|---|---|
 | `check` | `build.yml` → `scripts/check-updates.sh` | ~15s | Resolves the upstream (and NSS) ref to a commit SHA via `git ls-remote`. On a **scheduled** tick it skips the build when the latest release already records the SHA(s); on **push** (config changed) and **manual** runs it always builds. Emits `upstream_sha`, `nss_sha`, `need`. |
-| `release` | `build.yml` | ~5s | Opens one draft release per flavour (default, mesh) for the build jobs to upload into, and emits their tags. |
-| `build` | `build.yml` → `scripts/prepare-build.sh` | 2-6h | One matrix job per `devices/<name>/` × flavour. Checks out the upstream at the pinned SHA, runs `prepare-build.sh` (feeds, `.config`, overlays), sets reproducible-build env, compiles, uploads its images into the draft. |
-| `publish` | `build.yml` | ~5s | Publishes both drafts once every group of both flavours succeeded; deletes them (tags included) and fails otherwise. Only the default flavour is marked latest. |
+| `release` | `build.yml` | ~5s | Opens one draft release for the build job to upload into, and emits its tag. |
+| `build` | `build.yml` → `scripts/prepare-build.sh` | 2-6h | One matrix job per `devices/<name>/` (only `aw1000` today). Checks out the upstream at the pinned SHA, runs `prepare-build.sh` (feeds, `.config`, overlays), sets reproducible-build env, compiles, uploads its images into the draft. |
+| `publish` | `build.yml` | ~5s | Publishes the draft once the build succeeded; deletes it (tag included) and fails otherwise. |
 | `prune` | `build.yml` → `scripts/prune-releases.sh` | ~10s | Keeps the newest `KEEP` releases of each prefix. Tested in `scripts/tests/prune-releases.test.sh`. |
 
-## Why one release for all groups?
+## Why one release for all images?
 
-The ath11k memory profile is a compile-time choice that applies to the whole
-image, so boards can only share a build when they share a profile — hence one
-matrix job per profile group. That is a build-side constraint, not something a
-user should have to know about: one release holds every device's images, and
-`publish` is what keeps it all-or-nothing. A partial set would read as "this
-device is not supported" when it only means one group's compile broke, and a
-draft left behind is never pruned.
-
-The mesh flavour is a second release rather than more assets in that one, on
-the same reasoning read the other way: it is the same device set built against
-a different NSS firmware line, so its images share the group names and would
-collide. Which firmware a device wants is a choice the user makes, unlike its
-memory profile, so it is the one split that belongs in front of them.
+There is one matrix job (the AW1000), and its one draft is all-or-nothing:
+`publish` releases it only when the build succeeded, so a user never sees a
+half-uploaded image set that reads as "this device is not supported". A draft
+left behind is never pruned, which is why a failed build deletes it.
 
 ## Why split into jobs?
 
@@ -55,8 +46,8 @@ per build but the tip moves as upstream does — that is the documented trade-of
 
 ## Why an `env:` block instead of a config file?
 
-Every build parameter (upstream, NSS, target, feed, retention, cron) lives in the `env:` block at
-the top of `build.yml`, and the set of devices is the `build` job's matrix next to it. It is the one
+Every build parameter (upstream, NSS, feeds, target, retention, cron) lives in the `env:` block at
+the top of `build.yml`, and the device set is the `build` job's matrix next to it. It is the one
 file you edit — no separate YAML to parse, no extra tooling (`yq`) on the runner.
 
 ## Why `scripts/` instead of inline shell?

@@ -90,6 +90,19 @@ for p in "$BUILDER_REPO/patches/feeds/$VARIANT"/*/*.patch; do
     log::die "$(basename "$p") does not apply to $feed"
   fi
 done
+# patches/feeds/<variant>/<feed>/<pkg>/*.patch are patches for one source
+# package inside a feed (paths relative to that package's source). They are
+# dropped into the package's own patches/ dir, so the package build applies
+# them after any patches it ships - the nss-packages feed carries no way to
+# patch its subpackages any other way.
+for p in "$BUILDER_REPO/patches/feeds/$VARIANT"/*/*/*.patch; do
+  feed="feeds/$(basename "$(dirname "$(dirname "$p")")")"
+  pkg="$(basename "$(dirname "$p")")"
+  dst="$feed/$pkg/patches"
+  mkdir -p "$dst"
+  log::info "Adding package patch to $feed/$pkg: $(basename "$p")"
+  cp "$p" "$dst/"
+done
 # patches/tree/<variant>/*.patch carry fixes still pending upstream; one that
 # main has merged reverse-applies and is skipped.
 for p in "$BUILDER_REPO/patches/tree/$VARIANT"/*.patch; do

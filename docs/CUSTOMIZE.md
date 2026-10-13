@@ -14,52 +14,45 @@ env:
   NSS_REF: edma-nss
   VARIANT: edma-nss                                   # selects devices/<id>/files.<variant>
   RELEASE_PREFIX: edma-nss                            # tag = <prefix>-<ts>-<run id>
-  MESH_RELEASE_PREFIX: edma-nss-mesh                  # same, for the mesh flavour
-  KEEP: "2"                                           # newest releases to retain, per prefix
-  FEEDS: "src-git nss https://github.com/JuliusBairaktaris/nss-packages.git;edma-nss"
+  KEEP: "2"                                           # newest releases to retain
+  FEEDS: |                                            # newline-separated src-git lines
+    src-git nss https://github.com/JuliusBairaktaris/nss-packages.git;edma-nss
+    src-git aw1000 https://github.com/cjayacopra/aw1000-feed.git;main
+    src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git;<pin>
+    src-git footstrap_files https://github.com/VizzleTF/luci-app-footstrap-files.git;<pin>
+    src-git luci_smstool https://github.com/4IceG/luci-app-sms-tool-js.git;<pin>
 ```
 
-Which devices get built is the `build` job's matrix, one entry per
-`devices/<id>/` directory:
+What gets built is the `build` job's matrix — one entry, the AW1000, whose
+group config is `devices/aw1000/config`:
 
 ```yaml
     strategy:
       matrix:
-        device: [xiaomi_ax3600, ipq807x-1g, ipq807x-512m, ipq807x-256m, ipq60xx-1g, ipq60xx-512m]
-        flavour: [default, mesh]
-        include:
-          - flavour: mesh
-            config_fragment: devices/common/config.mesh
+        device: [aw1000]
 ```
 
-The subtarget is part of each group's config (`CONFIG_TARGET_qualcommax_ipq807x=y`
-or `CONFIG_TARGET_qualcommax_ipq60xx=y`), not of the shared one, so ipq807x and
-ipq60xx groups build side by side.
+The subtarget is part of the group's config (`CONFIG_TARGET_qualcommax_ipq807x=y`),
+not of the shared one.
 
-The second axis is the **flavour**: every group is built twice, once plain and
-once for 802.11s mesh offload, and each flavour gets its own release
-(`RELEASE_PREFIX` / `MESH_RELEASE_PREFIX`). A flavour is nothing but a `.config`
-fragment appended after the common and device configs — `CONFIG_FRAGMENT`,
-which `prepare-build.sh` reads — so it wins on any symbol they also set. Mesh
-needs it because both the mesh option and its required NSS firmware line
-(11.4.0.5, the last one that accepts a mesh interface) are image-wide, exactly
-like the memory profile that splits the device groups. The overlay files are
-unaffected: both flavours use `files.$VARIANT`.
-
-A group exists per memory profile, because the ath11k and NSS profiles are
-compile-time and image-wide. Adding a device to a group is one
-`CONFIG_TARGET_DEVICE_qualcommax_<subtarget>_DEVICE_<id>=y` line in that group's
-config — the group whose profile matches the board's RAM.
+A group exists per device here — the AW1000 is the only board. Its config pins
+the ath11k 1 GB memory profile and the NSS high memory profile, which are
+compile-time and image-wide, so a second board with a different RAM size would
+need its own group config anyway. Adding one is a new `devices/<id>/config`
+with the target, the single device symbol and its packages, plus a matrix
+entry.
 
 Getting that right is on you. `kmod-ath11k` carries per-board profile selects,
 but they key off the single-profile choice symbol
-(`CONFIG_TARGET_qualcommax_ipq807x_DEVICE_<id>`), which a multi-device build
-never sets — they apply to a one-device build like `xiaomi_ax3600` and not to a
-group. In a group the profile is whatever the group config says, and a board in
-the wrong one gets an image built for the wrong amount of RAM.
+(`CONFIG_TARGET_qualcommax_ipq807x_DEVICE_<id>`), which the AW1000's build does
+set — with `CONFIG_TARGET_MULTI_PROFILE` off, the one selected device's selects
+apply. If you ever add a second device to a group without per-device rootfs,
+the profile is whatever the group config says, and a board in the wrong one
+gets an image built for the wrong amount of RAM.
 
-`CONFIG_TARGET_PER_DEVICE_ROOTFS=y` is what keeps each image to its own device
-packages; without it every image in a group carries every other board's.
+`CONFIG_TARGET_PER_DEVICE_ROOTFS` is not used: with a single device per build
+every image is that device's, so the pinning mechanism it exists for is
+irrelevant.
 
 When the build runs depends on the trigger:
 - **schedule** → `check` skips the build when the upstream is unchanged since the last release
@@ -79,7 +72,7 @@ OpenWrt checkout and diff back:
 
 ```sh
 git clone --branch nss-edma-rework https://github.com/JuliusBairaktaris/openwrt-nss-edma openwrt
-cat devices/common/config devices/xiaomi_ax3600/config > openwrt/.config
+cat devices/common/config devices/aw1000/config > openwrt/.config
 cd openwrt && make menuconfig
 ./scripts/diffconfig.sh > /tmp/full.config        # minimal .config (deltas only)
 # then split the delta back over devices/common/config and devices/<id>/config
@@ -113,9 +106,8 @@ network does not use them. Each is enabled by adding its package to
 
 Each package brings its own init/userland; `nss-up` does not start them. Not
 available on this platform/firmware: IPsec (ESP) offload, TLS/DTLS, CoDel ECN
-marking (see the wiki Limitations page). Wi-Fi mesh offload works on an
-11.4-firmware build (`NSS_FIRMWARE_VERSION_11_4` + `ATH11K_NSS_MESH_SUPPORT`);
-only the default 12.5 firmware blocks it.
+marking (see the wiki Limitations page). Wi-Fi mesh offload is not built: it
+needs the 11.4 firmware line, and this repo ships 12.5 only.
 
 > Routed multicast note: `nss-up` carries a **commented-out** start stage for a
 > multicast daemon — it is not run in the default image (no IPTV source on the

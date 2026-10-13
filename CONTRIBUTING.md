@@ -2,7 +2,7 @@
 
 Thanks for your interest. Particularly valuable contributions:
 
-- **Package or config improvements** to [`devices/xiaomi_ax3600/config`](devices/xiaomi_ax3600/config) or the overlays.
+- **Package or config improvements** to [`devices/aw1000/config`](devices/aw1000/config) or the overlays.
 - **Pipeline fixes** to the workflow or `scripts/`.
 - **Doc improvements.**
 
