@@ -64,9 +64,22 @@ if [[ -n "$FEEDS" ]]; then
       sed -i -E "/^src-\S+[[:space:]]+${feed_name}[[:space:]]/d" feeds.conf
       echo "$line" >>feeds.conf
     fi
-    # Update + install each custom feed individually so failures are obvious.
+  done <<<"$FEEDS"
+
+  # Update every custom feed before installing any: a feed's LuCI packages
+  # include feeds/luci/luci.mk, which does not resolve until the luci feed
+  # is cloned, so indexing a feed before `update -a` fills feeds/ fails.
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    feed_name="$(awk '{print $2}' <<<"$line")"
     log::info "Updating feed: $feed_name"
     ./scripts/feeds update "$feed_name"
+  done <<<"$FEEDS"
+  # Install each custom feed individually so failures are obvious.
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    feed_name="$(awk '{print $2}' <<<"$line")"
+    log::info "Installing feed: $feed_name"
     ./scripts/feeds install -a -p "$feed_name"
   done <<<"$FEEDS"
 fi
