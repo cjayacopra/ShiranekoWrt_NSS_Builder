@@ -10,14 +10,13 @@
 
 OpenWrt sysupgrade images with NSS hardware offload (NAT, PPPoE, SQM, bridge
 and Wi-Fi) for the Arcadyan AW1000 (`qualcommax/ipq807x`, 1 GB RAM), plus the
-[aw1000-feed](https://github.com/cjayacopra/aw1000-feed) modem/WWAN stack:
+modem/WWAN stack vendored in [`feed/aw1000/`](feed/aw1000):
 `qmi_wwan_q` with QMAP, `quectel-cm`, the AW1000 modem LuCI pages and board
 defaults. The offload runs on OpenWrt main's upstream
 `qca_edma`/`qca_ppe` ethernet drivers instead of the vendor
 `qca-nss-dp`/`qca-ssdk` stack. Images are built by GitHub Actions from
-[openwrt-nss-edma](https://github.com/JuliusBairaktaris/openwrt-nss-edma),
-[nss-packages](https://github.com/JuliusBairaktaris/nss-packages) and
-[aw1000-feed](https://github.com/cjayacopra/aw1000-feed).
+[openwrt-nss-edma](https://github.com/JuliusBairaktaris/openwrt-nss-edma)
+and [nss-packages](https://github.com/JuliusBairaktaris/nss-packages).
 
 Background and design are in the
 [wiki](https://github.com/JuliusBairaktaris/openwrt-nss-edma/wiki), starting
@@ -52,12 +51,13 @@ The AW1000 is the only board this repo builds. Its config lives in
 memory profile are both image-wide build options, which is why there is one
 group and no per-board variants.
 
-The modem stack comes from the aw1000-feed: `kmod-qmi_wwan_q` (QMAP muxing
+The modem stack is vendored in `feed/aw1000/`: `kmod-qmi_wwan_q` (QMAP muxing
 for Quectel modems), `quectel-cm` for data connection setup, `sms-tool` with
 the AW1000 modem LuCI pages for SMS/USSD/signal, `aw1000-defaults` for the
 board's modem and LED defaults, and `udp-broadcast-relay-redux` for
 LAN multicast. Upstream `uqmi` and `kmod-usb-net-qmi-wwan` are pinned off so
-they cannot race the feed's `qmi_wwan_q` driver for the modem's QMI interface.
+they cannot race the vendored `qmi_wwan_q` driver for the modem's QMI
+interface.
 
 </details>
 
@@ -111,7 +111,7 @@ git clone --branch nss-edma-rework https://github.com/JuliusBairaktaris/openwrt-
 cd openwrt
 cp feeds.conf.default feeds.conf
 echo "src-git nss https://github.com/JuliusBairaktaris/nss-packages.git;edma-nss" >> feeds.conf
-echo "src-git aw1000 https://github.com/cjayacopra/aw1000-feed.git;main" >> feeds.conf
+echo "src-link aw1000 ../ShiranekoWrt_NSS_Builder/feed/aw1000" >> feeds.conf
 ./scripts/feeds update -a && ./scripts/feeds install -a
 B=../ShiranekoWrt_NSS_Builder/devices
 cat "$B/common/config" "$B/aw1000/config" > .config

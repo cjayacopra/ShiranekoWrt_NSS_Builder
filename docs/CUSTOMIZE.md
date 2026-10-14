@@ -15,13 +15,18 @@ env:
   VARIANT: edma-nss                                   # selects devices/<id>/files.<variant>
   RELEASE_PREFIX: edma-nss                            # tag = <prefix>-<ts>-<run id>
   KEEP: "2"                                           # newest releases to retain
-  FEEDS: |                                            # newline-separated src-git lines
+  FEEDS: |                                            # newline-separated feed lines
     src-git nss https://github.com/JuliusBairaktaris/nss-packages.git;edma-nss
-    src-git aw1000 https://github.com/cjayacopra/aw1000-feed.git;main
+    src-link aw1000 $BUILDER_REPO/feed/aw1000         # vendored, edit in place
     src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git;<pin>
     src-git footstrap_files https://github.com/VizzleTF/luci-app-footstrap-files.git;<pin>
     src-git luci_smstool https://github.com/4IceG/luci-app-sms-tool-js.git;<pin>
 ```
+
+`prepare-build.sh` expands `$BUILDER_REPO` in feed lines before writing them
+to `feeds.conf` (`scripts/feeds` does not expand env vars). The aw1000 feed
+is the repo's own `feed/aw1000/` directory — the modem/WWAN packages live
+here, so a package fix is an ordinary commit in this repo.
 
 What gets built is the `build` job's matrix — one entry, the AW1000, whose
 group config is `devices/aw1000/config`:
