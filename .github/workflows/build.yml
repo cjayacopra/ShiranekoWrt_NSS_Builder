@@ -315,8 +315,6 @@ jobs:
 
           {
             echo "## ${DEVICE}"
-              {
-            echo "## ${DEVICE}"
             echo "- assets: ${#assets[@]}"
           } >>"$GITHUB_STEP_SUMMARY"
 
