@@ -53,6 +53,10 @@ if [[ -n "$FEEDS" ]]; then
   log::info "Appending custom feeds:"
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
+    # feeds.conf is read literally by scripts/feeds, so a bundled feed's
+    # src-link path can only name this repo through an env var. Expand
+    # $BUILDER_REPO here, at write time.
+    line="${line//\$BUILDER_REPO/$BUILDER_REPO}"
     log::info "  $line"
     # Idempotent: this script is re-run over an existing tree, and a plain
     # append duplicates every custom feed on each pass - which then makes
@@ -60,7 +64,7 @@ if [[ -n "$FEEDS" ]]; then
     feed_name="$(awk '{print $2}' <<<"$line")"
     if ! grep -qxF "$line" feeds.conf; then
       # Same name as an existing feed: the line replaces it, so a fork can
-      # stand in for a default feed.
+      # stand in for a default feed - or a vendored feed can move around.
       sed -i -E "/^src-\S+[[:space:]]+${feed_name}[[:space:]]/d" feeds.conf
       echo "$line" >>feeds.conf
     fi

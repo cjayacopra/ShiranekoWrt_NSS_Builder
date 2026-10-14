@@ -34,13 +34,15 @@ env:
   RELEASE_PREFIX: edma-nss
   KEEP: "2"                     # newest releases to retain, per prefix
   # Custom feeds, in addition to feeds.conf.default. The nss feed is the same
-  # checkout NSS_REPO pins for SHA tracking. aw1000-feed carries the modem/WWAN
-  # packages (qmi_wwan_q, quectel-cm, luci-proto-quectel, the AW1000 LuCI app
-  # and board defaults, udp-broadcast-relay-redux); footstrap is its LuCI
-  # theme; luci_smstool provides the newer sms-tool the modem pages use.
+  # checkout NSS_REPO pins for SHA tracking. The aw1000 feed is vendored in
+  # this repo under feed/aw1000 (modem/WWAN packages: qmi_wwan_q, quectel-cm,
+  # luci-proto-quectel, the AW1000 LuCI app and board defaults,
+  # udp-broadcast-relay-redux) - edit it here, no second repo to maintain.
+  # footstrap is the LuCI theme; luci_smstool provides the newer sms-tool the
+  # modem pages use. $BUILDER_REPO is expanded by prepare-build.sh.
   FEEDS: |
     src-git nss https://github.com/JuliusBairaktaris/nss-packages.git;edma-nss
-    src-git aw1000 https://github.com/cjayacopra/aw1000-feed.git;main
+    src-link aw1000 $BUILDER_REPO/feed/aw1000
     src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git^ef68bbbb3a975a5eaa923b37a98e81a4ee005296
     src-git footstrap_files https://github.com/VizzleTF/luci-app-footstrap-files.git^e2aa8d1ff471b30d3789793949e5d79fb915b0a4
     src-git luci_smstool https://github.com/4IceG/luci-app-sms-tool-js.git^0bd41a0b64fa9a41272f391fcd0900fc1115af6e
@@ -312,6 +314,8 @@ jobs:
           done
 
           {
+            echo "## ${DEVICE}"
+              {
             echo "## ${DEVICE}"
             echo "- assets: ${#assets[@]}"
           } >>"$GITHUB_STEP_SUMMARY"
