@@ -1,0 +1,29 @@
+# act runner on top of the buildroot image (shiranekowrt-builder:base):
+# keeps the full OpenWrt host toolchain preinstalled, adds what act and the
+# workflows need that the base lacks (node for JS actions, curl, passwordless
+# sudo for the workflow's apt step, lsb_release, gh for release jobs).
+FROM shiranekowrt-builder:base
+
+USER root
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends --no-install-suggests --yes \
+        curl ca-certificates gnupg sudo lsb-release \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install --no-install-recommends --no-install-suggests --yes nodejs \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install --no-install-recommends --no-install-suggests --yes gh \
+    && rm -f -r /var/lib/apt/ /var/cache/apt/ \
+    && echo "buildbot ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/buildbot \
+    && chmod 0440 /etc/sudoers.d/buildbot
+
+USER buildbot
