@@ -1,15 +1,15 @@
 # act runner on top of the buildroot image (localhost/shiranekowrt-builder:base,
 # built from docker/builder-base/Containerfile in this repo):
 # keeps the full OpenWrt host toolchain preinstalled, adds what act and the
-# workflows need that the base lacks (node for JS actions, curl, jq, passwordless
-# sudo for the workflow's apt step, lsb_release, gh for release jobs).
+# workflows need that the base lacks (node for JS actions, curl, jq, shellcheck,
+# yamllint, passwordless sudo for the workflow's apt step, lsb_release, gh for release jobs).
 FROM localhost/shiranekowrt-builder:base
 
 USER root
 
 RUN apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests --yes \
-        curl ca-certificates gnupg jq sudo lsb-release \
+        curl ca-certificates gnupg jq shellcheck yamllint sudo lsb-release \
     && install -d -m 0755 /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
         | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
