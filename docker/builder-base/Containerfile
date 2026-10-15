@@ -1,0 +1,21 @@
+# Base image for the AW1000 builder and the local act runner.
+# Vendored from the buildroot workspace so this repo builds its own images
+# without referencing anything outside the project directory.
+#
+# Build:  docker build -t localhost/shiranekowrt-builder:base -f docker/builder-base/Containerfile docker/builder-base/
+FROM docker.io/debian:stable-slim
+
+ENV GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+WORKDIR /workdir
+
+RUN apt update && apt install --no-install-recommends --no-install-suggests --yes \
+    bc binutils-gold bison build-essential ccache clang ecj fastjar file flex g++ lld \
+    gawk gcc-arm* gettext git help2man libbsd-dev libelf-dev liblzma-dev libncurses-dev \
+    libssl-dev mtd-utils meson mold mtd-utils ninja-build pbzip2 pigz pkg-config python3-dev \
+    python3-setuptools rsync subversion swig texinfo time u-boot-tools unzip wget xsltproc xxd zlib1g-dev zstd \
+    && \
+    rm -f -r '/var/lib/apt/' && \
+    rm -f -r '/var/cache/apt/' && \
+    useradd -m -s '/bin/bash' -U 'buildbot'
+
+USER buildbot
