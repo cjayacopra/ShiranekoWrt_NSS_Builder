@@ -27,4 +27,10 @@ RUN apt-get update \
     && echo "buildbot ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/buildbot \
     && chmod 0440 /etc/sudoers.d/buildbot
 
+# Local-run convenience: act mounts the repo's .local-mirrors/ directory at /mnt/git-mirrors
+# (see .actrc --container-options). The system gitconfig below transparently redirects the
+# multi-GB upstream OpenWrt clone to the local mirror so local runs survive a flaky
+# github link. On GitHub-hosted runners this image is not used; workflows are unchanged.
+RUN git config --system url."file:///mnt/git-mirrors/openwrt-nss-edma".insteadOf "https://github.com/JuliusBairaktaris/openwrt-nss-edma"
+
 USER buildbot
