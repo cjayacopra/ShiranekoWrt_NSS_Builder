@@ -52,4 +52,21 @@ rewrite (baked at image build, see its Containerfile) pointing that clone at
 The fetch is resumable - just re-run it until it completes. GitHub runs are
 unaffected: the rewrite only exists inside the local act-runner image.
 
-Run jobs with `act` or the VS Code act-visual-runner extension.
+## Running jobs (CLI)
+
+Run jobs with the `act` CLI. The event argument is required: a bare `act`
+defaults to the `push` event, whose paths filters match nothing outside a
+matching commit, and act exits with "Could not find any stages to run".
+
+    # Lint (all four check jobs):
+    act -W .github/workflows/lint.yml workflow_dispatch
+
+    # Build aw1000 (compiles the full OpenWrt toolchain - hours):
+    act -j build -W .github/workflows/build.yml workflow_dispatch
+
+    # Stats / prune:
+    act -j stats -W .github/workflows/build.yml workflow_dispatch
+
+The VS Code act-visual-runner extension works too, but its plain Run button
+passes no event to act and hits the same "no stages" error; use it only
+with a workflow-inputs run, or prefer the CLI.
